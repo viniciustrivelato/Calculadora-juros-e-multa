@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Multa e Juros — Tributos Retidos</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#16211C;
+    --ink-soft:#3A453E;
+    --paper:#ECEFEA;
+    --panel:#F7F8F5;
+    --rule:#C9CCC2;
+    --muted:#6C766C;
+    --teal:#2F6F62;
+    --teal-soft:#E1EBE7;
+    --sienna:#B1502F;
+    --sienna-soft:#F3E3DB;
+    --focus:#1C5F52;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:32px 20px 64px;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+
+  header.page{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:24px;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .brandrow{display:flex;align-items:center;gap:14px;}
+  .badge{
+    width:46px;height:46px;border-radius:10px;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .badge svg{width:24px;height:24px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(26px,3.4vw,36px);
+    margin:0;
+    line-height:1.05;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    font-size:13.5px;
+    color:var(--muted);
+    max-width:360px;
+    text-align:right;
+    line-height:1.5;
+  }
+  @media (max-width:640px){ .subtitle{text-align:left;max-width:none;} }
+
+  .grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+    gap:28px;
+  }
+  @media (max-width:860px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:8px;
+    box-shadow:0 1px 2px rgba(22,33,28,0.04), 0 4px 14px rgba(22,33,28,0.05);
+  }
+  .card-head{
+    padding:16px 22px;
+    border-bottom:1px solid var(--rule);
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-top-left-radius:8px;
+    border-top-right-radius:8px;
+  }
+  .card-head h2{
+    font-family:'Fraunces',serif;
+    font-size:16px;
+    font-weight:500;
+    margin:0;
+  }
+  .card-head .tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.08em;
+    color:var(--muted);
+  }
+  .card-body{padding:22px;}
+
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .field{margin-bottom:18px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:420px){ .row2{grid-template-columns:1fr;} }
+
+  select, input[type="text"], input[type="date"], input[type="number"]{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:10px 12px;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    background:#fff;
+    color:var(--ink);
+  }
+  input[readonly]{
+    background:var(--teal-soft);
+    color:var(--teal);
+    font-weight:600;
+    border-color:transparent;
+  }
+  select{font-family:'Inter',sans-serif;font-size:13.5px;}
+  input:focus, select:focus{
+    outline:none;
+    border-color:var(--focus);
+    box-shadow:0 0 0 3px rgba(28,95,82,0.12);
+  }
+  .hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.4;}
+
+  .btn{
+    appearance:none;
+    border:none;
+    background:var(--ink);
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:12px 20px;
+    border-radius:2px;
+    cursor:pointer;
+    width:100%;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:var(--focus);}
+  .btn:disabled{background:#9aa39a;cursor:not-allowed;}
+
+  /* ---- Result panel: statement / receipt aesthetic ---- */
+  .receipt{padding:22px;}
+  .receipt-empty{
+    color:var(--muted);
+    font-size:13.5px;
+    line-height:1.6;
+    padding:20px 4px;
+  }
+  .receipt-empty strong{color:var(--ink-soft);}
+
+  .stat-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:9px 0;
+    border-bottom:1px dashed var(--rule);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px;
+  }
+  .stat-line .lbl{color:var(--ink-soft);font-family:'Inter',sans-serif;font-size:13px;}
+  .stat-line .val{font-weight:600;}
+  .stat-line.multa .val{color:var(--sienna);}
+  .stat-line.juros .val{color:var(--teal);}
+  .stat-line.total{
+    border-bottom:none;
+    border-top:2px solid var(--ink);
+    margin-top:6px;
+    padding-top:14px;
+  }
+  .stat-line.total .lbl{font-weight:700;color:var(--ink);font-size:14px;}
+  .stat-line.total .val{font-size:19px;color:var(--ink);}
+
+  .days-badge{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    background:var(--sienna-soft);
+    color:var(--sienna);
+    padding:3px 8px;
+    border-radius:20px;
+    margin-bottom:14px;
+  }
+  .days-badge.zero{background:var(--teal-soft);color:var(--teal);}
+
+  .iss-warning{
+    background:var(--sienna-soft);
+    color:var(--sienna);
+    border-radius:6px;
+    padding:10px 14px;
+    font-size:12px;
+    line-height:1.55;
+    margin-bottom:16px;
+  }
+  .iss-warning strong{ color:var(--ink); }
+
+  details.breakdown{
+    margin-top:18px;
+    border-top:1px solid var(--rule);
+    padding-top:12px;
+  }
+  details.breakdown summary{
+    cursor:pointer;
+    font-size:12px;
+    font-weight:600;
+    color:var(--teal);
+    list-style:none;
+  }
+  details.breakdown summary::-webkit-details-marker{display:none;}
+  details.breakdown summary:before{content:"▸ ";}
+  details.breakdown[open] summary:before{content:"▾ ";}
+
+  table.months{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+  }
+  table.months th{
+    text-align:left;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--muted);
+    padding:6px 8px;
+    border-bottom:1px solid var(--rule);
+  }
+  table.months td{
+    padding:6px 8px;
+    border-bottom:1px solid var(--rule);
+  }
+  table.months tr:last-child td{border-bottom:none;font-weight:600;}
+  table.months td.num, table.months th.num{text-align:right;}
+
+  .disclaimer{
+    margin-top:26px;
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.6;
+    border-top:1px solid var(--rule);
+    padding-top:14px;
+  }
+  .status-msg{
+    font-size:12px;
+    padding:9px 12px;
+    border-radius:2px;
+    margin-bottom:14px;
+  }
+  .status-msg.error{background:var(--sienna-soft);color:var(--sienna);}
+  .status-msg.loading{background:var(--teal-soft);color:var(--teal);}
+
+  footer.appfooter{
+    margin-top:32px;
+    padding-top:16px;
+    border-top:1px solid var(--rule);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--muted);
+  }
+  footer.appfooter .credit{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  footer.appfooter .dot{width:3px;height:3px;border-radius:50%;background:var(--rule);}
+  footer.appfooter .name{color:var(--ink-soft);font-weight:500;}
+  .version-pill{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    color:var(--teal);
+    background:var(--teal-soft);
+    padding:2px 8px;
+    border-radius:20px;
+  }
+
+  .table-status{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--muted);
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:8px;
+    padding:8px 14px;
+    margin-bottom:24px;
+    flex-wrap:wrap;
+  }
+  .table-status.stale{ color:var(--sienna); background:var(--sienna-soft); border-color:transparent; }
+  .table-status.fresh{ color:var(--teal); background:var(--teal-soft); border-color:transparent; }
+  .btn-mini{
+    appearance:none;
+    border:1px solid currentColor;
+    background:transparent;
+    color:inherit;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:11px;
+    padding:5px 10px;
+    border-radius:20px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-mini:hover{ opacity:0.75; }
+  .btn-mini:disabled{ opacity:0.5; cursor:not-allowed; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="brandrow">
+      <div class="badge">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" rx="3" stroke="#ECEFEA" stroke-width="1.6"/>
+          <path d="M7 9H17" stroke="#ECEFEA" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M7 13H13" stroke="#ECEFEA" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M7 17H15" stroke="#ECEFEA" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <p class="eyebrow">Departamento Fiscal · Ferramenta interna</p>
+        <h1>Multa e Juros sobre<br>Tributos Retidos em Atraso</h1>
+      </div>
+    </div>
+    <p class="subtitle">IRRF, CSRF (PIS/COFINS/CSLL), INSS e ISS retidos na fonte — cálculo com base na SELIC acumulada (art. 61, Lei 9.430/96)</p>
+  </header>
+
+  <div class="table-status" id="tableStatusBar">
+    <span id="tabelaStatus">Tabela SELIC local carregando…</span>
+    <button class="btn-mini" id="btnAtualizarTabela" type="button">Atualizar tabela</button>
+  </div>
+
+  <div class="grid">
+    <!-- FORM -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Dados do recolhimento</h2>
+        <span class="tag">01 · ENTRADA</span>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <label for="tributo">Tributo / retenção</label>
+          <select id="tributo">
+            <option value="IRRF">IRRF - Retido na fonte</option>
+            <option value="CSRF">CSRF (PIS/COFINS/CSLL) - Retido na fonte</option>
+            <option value="ISS">ISS - Retido na fonte</option>
+            <option value="INSS">INSS - Retido na fonte</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="valor">Valor do imposto retido na nota (R$)</label>
+          <input type="text" id="valor" inputmode="decimal" placeholder="Ex: 4.250,00">
+        </div>
+
+        <div class="field">
+          <label for="emissao">Data de emissão da nota fiscal</label>
+          <input type="date" id="emissao">
+        </div>
+
+        <div class="row2">
+          <div class="field" id="vencAutoWrap">
+            <label for="vencimento">Vencimento do imposto</label>
+            <input type="date" id="vencimento">
+            <p class="hint" id="vencHint">Calculado automaticamente a partir da emissão.</p>
+          </div>
+          <div class="field">
+            <label for="pagamento">Quero saber o juros e multa até</label>
+            <input type="date" id="pagamento">
+            <p class="hint">Já preenchido com o último dia deste mês.</p>
+          </div>
+        </div>
+
+        <button class="btn" id="calcBtn" type="button">Calcular multa e juros</button>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Demonstrativo de cálculo</h2>
+        <span class="tag">02 · RESULTADO</span>
+      </div>
+      <div class="receipt" id="result">
+        <p class="receipt-empty">Preencha os dados ao lado e clique em <strong>Calcular</strong>. O resultado aparece aqui, com o detalhamento do cálculo mês a mês.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="disclaimer">
+    Cálculo baseado na regra padrão da Receita Federal para tributos federais em atraso: multa de mora de 0,33% ao dia (limitada a 20%) sobre o valor original, e juros equivalentes à taxa SELIC acumulada do mês seguinte ao vencimento até o mês anterior à consolidação, acrescida de 1% no mês da consolidação. As taxas SELIC mensais usadas ficam gravadas neste próprio arquivo (tabela oficial da Receita Federal, atualizada até agosto/2026), então o cálculo funciona mesmo sem internet — precisa apenas ser atualizado mensalmente pelo setor fiscal. Esta ferramenta é um apoio operacional e não substitui a conferência do setor fiscal/jurídico responsável nem a emissão oficial via Sicalc — confirme sempre o resultado antes do recolhimento.
+  </p>
+
+  <footer class="appfooter">
+    <span class="version-pill">v1.0</span>
+    <div class="credit">
+      <span>Desenvolvido por</span>
+      <span class="name">Vinicius Trivelato de Oliveira</span>
+      <span class="dot"></span>
+      <span>Acelen</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// default pagamento (consolidação) = último dia do mês corrente
+(function(){
+  const hoje = new Date();
+  $('pagamento').valueAsDate = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0);
+})();
+
+// ---- Cálculo de feriados nacionais e dia útil (para o vencimento automático) ----
+function easterDate(year){
+  const a = year % 19, b = Math.floor(year/100), c = year % 100;
+  const d = Math.floor(b/4), e = b % 4, f = Math.floor((b+8)/25);
+  const g = Math.floor((b-f+1)/3), h = (19*a+b-d-g+15)%30;
+  const i = Math.floor(c/4), k = c%4;
+  const l = (32+2*e+2*i-h-k)%7;
+  const m = Math.floor((a+11*h+22*l)/451);
+  const month = Math.floor((h+l-7*m+114)/31);
+  const day = ((h+l-7*m+114)%31)+1;
+  return new Date(year, month-1, day);
+}
+function addDays(date, n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
+function sameDate(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+function feriadosNacionais(year){
+  const easter = easterDate(year);
+  return [
+    new Date(year,0,1),           // Confraternização Universal
+    addDays(easter,-48),          // Carnaval (segunda)
+    addDays(easter,-47),          // Carnaval (terça)
+    addDays(easter,-2),           // Sexta-feira Santa
+    addDays(easter,60),           // Corpus Christi
+    new Date(year,3,21),          // Tiradentes
+    new Date(year,4,1),           // Dia do Trabalho
+    new Date(year,8,7),           // Independência
+    new Date(year,9,12),          // Nossa Senhora Aparecida
+    new Date(year,10,2),          // Finados
+    new Date(year,10,15),         // Proclamação da República
+    new Date(year,10,20),         // Consciência Negra (nacional)
+    new Date(year,11,25),         // Natal
+  ];
+}
+function isDiaUtil(date){
+  const dow = date.getDay();
+  if(dow===0 || dow===6) return false;
+  const feriados = feriadosNacionais(date.getFullYear());
+  return !feriados.some(f=>sameDate(f,date));
+}
+function ultimoDiaUtilAte(date){
+  let d = new Date(date);
+  while(!isDiaUtil(d)) d = addDays(d,-1);
+  return d;
+}
+function toISODate(date){
+  const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function atualizarModoVencimento(){
+  const tributo = $('tributo').value;
+  const auto = (tributo==='IRRF' || tributo==='CSRF' || tributo==='INSS');
+  $('vencimento').readOnly = auto;
+  if(!auto){
+    $('vencimento').value = '';
+    $('vencHint').textContent = 'O ISS tem regra própria de cada prefeitura — informe a data de vencimento manualmente.';
+  }
+}
+
+function calcularVencimentoAutomatico(){
+  const tributo = $('tributo').value;
+  const emissaoStr = $('emissao').value;
+  atualizarModoVencimento();
+  if(!emissaoStr || (tributo!=='IRRF' && tributo!=='CSRF' && tributo!=='INSS')) return;
+
+  const emissao = parseISO(emissaoStr);
+  let nextMonth = emissao.getMonth()+1, nextYear = emissao.getFullYear();
+  if(nextMonth>11){ nextMonth=0; nextYear++; }
+  const dia20 = new Date(nextYear, nextMonth, 20);
+  const venc = ultimoDiaUtilAte(dia20);
+  $('vencimento').value = toISODate(venc);
+  $('vencHint').textContent = 'Calculado automaticamente: dia 20 do mês seguinte à emissão da nota.';
+}
+
+$('emissao').addEventListener('change', calcularVencimentoAutomatico);
+$('tributo').addEventListener('change', calcularVencimentoAutomatico);
+atualizarModoVencimento();
+
+$('btnAtualizarTabela').addEventListener('click', atualizarTabelaSelic);
+carregarExtrasSalvos().then(atualizarBarraStatus);
+
+function parseValor(str){
+  if(!str) return NaN;
+  const cleaned = str.replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'');
+  return parseFloat(cleaned);
+}
+
+function fmtBRL(n){
+  return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+function fmtPct(n){
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + '%';
+}
+function fmtDateBR(d){
+  return d.toLocaleDateString('pt-BR');
+}
+
+function parseISO(str){
+  // yyyy-mm-dd -> Date at local midnight
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function toDDMMYYYY(date){
+  const d = String(date.getDate()).padStart(2,'0');
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+// ---- Tabela oficial de taxas SELIC mensais (Receita Federal) ----
+// Fonte: Receita Federal do Brasil. Cobre de jan/2015 a ago/2026.
+// MANUTENÇÃO: todo início de mês a Receita divulga a taxa do mês anterior.
+// Para manter a calculadora funcionando sem internet, adicione a nova linha
+// abaixo no formato "AAAA-MM": taxa (ex: "2026-08": 1.10,) conforme a Receita publica.
+const SELIC_TABLE = {
+"2015-01":0.94,"2015-02":0.82,"2015-03":1.04,"2015-04":0.95,"2015-05":0.99,"2015-06":1.07,"2015-07":1.18,"2015-08":1.11,"2015-09":1.11,"2015-10":1.11,"2015-11":1.06,"2015-12":1.16,
+"2016-01":1.06,"2016-02":1.00,"2016-03":1.16,"2016-04":1.06,"2016-05":1.11,"2016-06":1.16,"2016-07":1.11,"2016-08":1.22,"2016-09":1.11,"2016-10":1.05,"2016-11":1.04,"2016-12":1.12,
+"2017-01":1.09,"2017-02":0.87,"2017-03":1.05,"2017-04":0.79,"2017-05":0.93,"2017-06":0.81,"2017-07":0.80,"2017-08":0.80,"2017-09":0.64,"2017-10":0.64,"2017-11":0.57,"2017-12":0.54,
+"2018-01":0.58,"2018-02":0.47,"2018-03":0.53,"2018-04":0.52,"2018-05":0.52,"2018-06":0.52,"2018-07":0.54,"2018-08":0.57,"2018-09":0.47,"2018-10":0.54,"2018-11":0.49,"2018-12":0.49,
+"2019-01":0.54,"2019-02":0.49,"2019-03":0.47,"2019-04":0.52,"2019-05":0.54,"2019-06":0.47,"2019-07":0.57,"2019-08":0.50,"2019-09":0.46,"2019-10":0.48,"2019-11":0.38,"2019-12":0.37,
+"2020-01":0.38,"2020-02":0.29,"2020-03":0.34,"2020-04":0.28,"2020-05":0.24,"2020-06":0.21,"2020-07":0.19,"2020-08":0.16,"2020-09":0.16,"2020-10":0.16,"2020-11":0.15,"2020-12":0.16,
+"2021-01":0.15,"2021-02":0.13,"2021-03":0.20,"2021-04":0.21,"2021-05":0.27,"2021-06":0.31,"2021-07":0.36,"2021-08":0.43,"2021-09":0.44,"2021-10":0.49,"2021-11":0.59,"2021-12":0.77,
+"2022-01":0.73,"2022-02":0.76,"2022-03":0.93,"2022-04":0.83,"2022-05":1.03,"2022-06":1.02,"2022-07":1.03,"2022-08":1.17,"2022-09":1.07,"2022-10":1.02,"2022-11":1.02,"2022-12":1.12,
+"2023-01":1.12,"2023-02":0.92,"2023-03":1.17,"2023-04":0.92,"2023-05":1.12,"2023-06":1.07,"2023-07":1.07,"2023-08":1.14,"2023-09":0.97,"2023-10":1.00,"2023-11":0.92,"2023-12":0.89,
+"2024-01":0.97,"2024-02":0.80,"2024-03":0.83,"2024-04":0.89,"2024-05":0.83,"2024-06":0.79,"2024-07":0.91,"2024-08":0.87,"2024-09":0.84,"2024-10":0.93,"2024-11":0.79,"2024-12":0.93,
+"2025-01":1.01,"2025-02":0.99,"2025-03":0.96,"2025-04":1.06,"2025-05":1.14,"2025-06":1.10,"2025-07":1.28,"2025-08":1.16,"2025-09":1.22,"2025-10":1.28,"2025-11":1.05,"2025-12":1.22,
+"2026-01":1.16,"2026-02":1.00,"2026-03":1.21,"2026-04":1.09,"2026-05":1.07,"2026-06":1.12,"2026-07":1.22,"2026-08":1.09,
+};
+function selicKey(year, month){ return `${year}-${String(month+1).padStart(2,'0')}`; }
+function parseSelicKey(key){ const [y,mm] = key.split('-').map(Number); return {year:y, month:mm-1}; }
+function getSelicTabela(year, month){
+  const v = SELIC_TABLE[selicKey(year,month)];
+  return (v===undefined) ? null : v;
+}
+
+// ---- Status da tabela e atualização assistida ----
+function tabelaUltimaChave(){
+  return Object.keys(SELIC_TABLE).sort().pop();
+}
+function mesAnterior(year, month){ // month 0-indexed
+  let m=month-1, y=year;
+  if(m<0){ m=11; y--; }
+  return {year:y, month:m};
+}
+function proximoMes(year, month){
+  let m=month+1, y=year;
+  if(m>11){ m=0; y++; }
+  return {year:y, month:m};
+}
+
+async function carregarExtrasSalvos(){
+  try{
+    if(typeof window!=='undefined' && window.storage){
+      const r = await window.storage.get('selic_extra_meses', true);
+      if(r && r.value){
+        const extras = JSON.parse(r.value);
+        Object.assign(SELIC_TABLE, extras);
+      }
+    }
+  }catch(e){ /* sem storage disponível neste ambiente — segue com a tabela local mesmo */ }
+}
+
+async function salvarExtras(extras){
+  try{
+    if(typeof window!=='undefined' && window.storage){
+      let atuais = {};
+      try{
+        const r = await window.storage.get('selic_extra_meses', true);
+        if(r && r.value) atuais = JSON.parse(r.value);
+      }catch(e){}
+      Object.assign(atuais, extras);
+      await window.storage.set('selic_extra_meses', JSON.stringify(atuais), true);
+    }
+  }catch(e){ /* melhor esforço — se não der pra salvar, a atualização ainda vale pra esta sessão */ }
+}
+
+function atualizarBarraStatus(){
+  const bar = $('tableStatusBar');
+  const ultimo = tabelaUltimaChave();
+  const {year, month} = parseSelicKey(ultimo);
+  const nomeMes = `${MESES[month]}/${year}`;
+
+  const hoje = new Date();
+  const alvo = mesAnterior(hoje.getFullYear(), hoje.getMonth()); // último mês que já deveria ter sido publicado
+  const emDia = (year > alvo.year) || (year === alvo.year && month >= alvo.month);
+
+  bar.classList.remove('stale','fresh');
+  bar.classList.add(emDia ? 'fresh' : 'stale');
+  $('tabelaStatus').textContent = emDia
+    ? `Tabela SELIC local atualizada até ${nomeMes}`
+    : `Tabela SELIC local desatualizada — só cobre até ${nomeMes}`;
+}
+
+async function atualizarTabelaSelic(){
+  const btn = $('btnAtualizarTabela');
+  const status = $('tabelaStatus');
+  const bar = $('tableStatusBar');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Atualizando…';
+
+  const hoje = new Date();
+  const alvo = mesAnterior(hoje.getFullYear(), hoje.getMonth());
+  const ultimo = parseSelicKey(tabelaUltimaChave());
+
+  const jaEmDia = (ultimo.year > alvo.year) || (ultimo.year === alvo.year && ultimo.month >= alvo.month);
+  if(jaEmDia){
+    atualizarBarraStatus();
+    status.textContent += ' — já está em dia, nada para buscar.';
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+    return;
+  }
+
+  const inicio = proximoMes(ultimo.year, ultimo.month);
+  const startDate = firstDayOfMonth(inicio.year, inicio.month);
+  const endDate = lastDayOfMonth(alvo.year, alvo.month);
+
+  try{
+    const dados = await fetchSelicRange(startDate, endDate);
+    if(!dados.length) throw new Error('Nenhum dado retornado');
+    const extras = {};
+    dados.forEach(d=>{ extras[selicKey(d.date.getFullYear(), d.date.getMonth())] = d.valor; });
+    Object.assign(SELIC_TABLE, extras);
+    await salvarExtras(extras);
+    atualizarBarraStatus();
+    status.textContent += ' — atualizado agora com sucesso ✓';
+  }catch(e){
+    bar.classList.remove('fresh');
+    bar.classList.add('stale');
+    status.textContent = `Não foi possível atualizar agora (sem acesso à internet do Banco Central a partir deste navegador/rede). A tabela local segue funcionando normalmente até ${MESES[ultimo.month]}/${ultimo.year} — para os meses seguintes, peça ao setor fiscal para adicionar a linha manualmente no arquivo (procure por SELIC_TABLE no código).`;
+  }finally{
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+}
+
+async function fetchSelicRange(startDate, endDate){
+  // startDate = first day of first month to include
+  // endDate = last day of last month to include
+  const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=${toDDMMYYYY(startDate)}&dataFinal=${toDDMMYYYY(endDate)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Falha na resposta da API do Bacen');
+  const data = await res.json();
+  return data.map(item=>{
+    const [d,m,y] = item.data.split('/').map(Number);
+    return { date: new Date(y, m-1, d), valor: parseFloat(item.valor.replace(',','.')) };
+  });
+}
+
+function lastDayOfMonth(year, month){ // month 0-indexed
+  return new Date(year, month+1, 0);
+}
+function firstDayOfMonth(year, month){
+  return new Date(year, month, 1);
+}
+
+async function calcular(){
+  const btn = $('calcBtn');
+  const resultEl = $('result');
+  const tributo = $('tributo').value;
+  const valor = parseValor($('valor').value);
+  const vencStr = $('vencimento').value;
+  const pagStr = $('pagamento').value;
+
+  if(isNaN(valor) || valor<=0){
+    resultEl.innerHTML = '<p class="status-msg error">Informe um valor original válido.</p>';
+    return;
+  }
+  if(!vencStr || !pagStr){
+    resultEl.innerHTML = '<p class="status-msg error">Informe as datas de vencimento e pagamento.</p>';
+    return;
+  }
+
+  const venc = parseISO(vencStr);
+  const pag = parseISO(pagStr);
+
+  if(pag < venc){
+    resultEl.innerHTML = '<p class="status-msg error">A data de pagamento não pode ser anterior ao vencimento.</p>';
+    return;
+  }
+
+  const diffMs = pag - venc;
+  const diasAtraso = Math.round(diffMs / 86400000);
+
+  if(diasAtraso === 0){
+    resultEl.innerHTML = `
+      <span class="days-badge zero">Pago em dia — sem atraso</span>
+      <div class="stat-line total">
+        <span class="lbl">Valor a recolher</span>
+        <span class="val">${fmtBRL(valor)}</span>
+      </div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Calculando…';
+  resultEl.innerHTML = '<p class="status-msg loading">Calculando…</p>';
+
+  // Multa: 0,33% ao dia, limitada a 20%
+  const multaPct = Math.min(diasAtraso * 0.33, 20);
+  const multaValor = valor * multaPct / 100;
+
+  const sameMonth = (venc.getFullYear()===pag.getFullYear() && venc.getMonth()===pag.getMonth());
+
+  let monthsBreakdown = [];
+  let selicSum = 0;
+
+  try{
+    if(!sameMonth){
+      // meses estritamente entre o mês do vencimento e o mês da consolidação
+      let startRangeMonth = venc.getMonth()+1, startRangeYear = venc.getFullYear();
+      if(startRangeMonth>11){ startRangeMonth=0; startRangeYear++; }
+      let endRangeMonth = pag.getMonth()-1, endRangeYear = pag.getFullYear();
+      if(endRangeMonth<0){ endRangeMonth=11; endRangeYear--; }
+
+      if(firstDayOfMonth(startRangeYear,startRangeMonth) <= lastDayOfMonth(endRangeYear,endRangeMonth)){
+        // monta a lista de meses do intervalo
+        let mesesDoIntervalo = [];
+        let y = startRangeYear, m = startRangeMonth;
+        while(y < endRangeYear || (y===endRangeYear && m<=endRangeMonth)){
+          mesesDoIntervalo.push({y,m});
+          m++; if(m>11){ m=0; y++; }
+        }
+
+        // 1) tenta resolver cada mês pela tabela local (funciona sem internet)
+        let faltantes = [];
+        mesesDoIntervalo.forEach(({y,m})=>{
+          const tabela = getSelicTabela(y,m);
+          if(tabela!==null){
+            selicSum += tabela;
+            monthsBreakdown.push({label: `${MESES[m]}/${y}`, valor: tabela});
+          } else {
+            faltantes.push({y,m});
+          }
+        });
+
+        // 2) para os meses fora da tabela local, tenta buscar na API do Bacen como reforço
+        if(faltantes.length){
+          try{
+            const inicioFaltante = firstDayOfMonth(faltantes[0].y, faltantes[0].m);
+            const fimFaltante = lastDayOfMonth(faltantes[faltantes.length-1].y, faltantes[faltantes.length-1].m);
+            const dados = await fetchSelicRange(inicioFaltante, fimFaltante);
+            const encontrados = new Set();
+            dados.forEach(d=>{
+              selicSum += d.valor;
+              monthsBreakdown.push({label: `${MESES[d.date.getMonth()]}/${d.date.getFullYear()}`, valor: d.valor});
+              encontrados.add(selicKey(d.date.getFullYear(), d.date.getMonth()));
+            });
+            const aindaFaltando = faltantes.filter(f=>!encontrados.has(selicKey(f.y,f.m)));
+            if(aindaFaltando.length){
+              const nomes = aindaFaltando.map(f=>`${MESES[f.m]}/${f.y}`).join(', ');
+              throw new Error(`Taxa SELIC de ${nomes} ainda não está disponível`);
+            }
+          } catch(e){
+            const nomes = faltantes.map(f=>`${MESES[f.m]}/${f.y}`).join(', ');
+            btn.disabled = false;
+            btn.textContent = 'Calcular multa e juros';
+            resultEl.innerHTML = `<p class="status-msg error">A taxa SELIC de <strong>${nomes}</strong> ainda não está cadastrada na calculadora e não foi possível buscá-la agora. Isso costuma acontecer com o mês mais recente (a Receita só divulga no início do mês seguinte) — tente uma data de consolidação um pouco anterior, ou avise o setor fiscal para atualizar a tabela.</p>`;
+            return;
+          }
+        }
+        monthsBreakdown.sort((a,b)=> (a.label>b.label?1:-1));
+      }
+    }
+  } catch(err){
+    btn.disabled = false;
+    btn.textContent = 'Calcular multa e juros';
+    resultEl.innerHTML = `
+      <p class="status-msg error">Não foi possível calcular agora. Tente novamente ou avise o setor fiscal se o problema continuar.</p>`;
+    return;
+  }
+
+  const jurosPct = selicSum + 1; // +1% do mês do pagamento
+  const jurosValor = valor * jurosPct / 100;
+  const total = valor + multaValor + jurosValor;
+
+  let breakdownHTML = '';
+  if(monthsBreakdown.length){
+    breakdownHTML = `
+      <details class="breakdown">
+        <summary>Ver memória de cálculo da SELIC (${monthsBreakdown.length} mês${monthsBreakdown.length>1?'es':''})</summary>
+        <table class="months">
+          <thead><tr><th>Mês</th><th class="num">Selic no mês</th></tr></thead>
+          <tbody>
+            ${monthsBreakdown.map(m=>`<tr><td>${m.label}</td><td class="num">${fmtPct(m.valor)}</td></tr>`).join('')}
+            <tr><td>+ 1% (mês do pagamento)</td><td class="num">${fmtPct(1)}</td></tr>
+            <tr><td>Total juros</td><td class="num">${fmtPct(jurosPct)}</td></tr>
+          </tbody>
+        </table>
+      </details>`;
+  } else {
+    breakdownHTML = `
+      <details class="breakdown">
+        <summary>Ver memória de cálculo</summary>
+        <table class="months">
+          <tbody>
+            <tr><td>Pagamento no mesmo mês do vencimento — juros fixo de 1%</td><td class="num">${fmtPct(jurosPct)}</td></tr>
+          </tbody>
+        </table>
+      </details>`;
+  }
+
+  const avisoISS = (tributo==='ISS') ? `
+    <div class="iss-warning">
+      ⚠️ O ISS é um tributo <strong>municipal</strong> — cada prefeitura define sua própria multa e seus próprios juros de mora, que nem sempre seguem a SELIC. O cálculo abaixo usa a <strong>fórmula federal</strong> (a mesma do IRRF/CSRF/INSS) como referência, mas pode divergir da regra da prefeitura do seu fornecedor. Confirme na legislação municipal antes de recolher.
+    </div>` : '';
+
+  resultEl.innerHTML = `
+    ${avisoISS}
+    <span class="days-badge">${diasAtraso} dia${diasAtraso>1?'s':''} de atraso · ${fmtDateBR(venc)} → ${fmtDateBR(pag)}</span>
+
+    <div class="stat-line">
+      <span class="lbl">Tributo</span>
+      <span class="val">${tributo}</span>
+    </div>
+    <div class="stat-line">
+      <span class="lbl">Valor original</span>
+      <span class="val">${fmtBRL(valor)}</span>
+    </div>
+    <div class="stat-line multa">
+      <span class="lbl">Multa de mora (${fmtPct(multaPct)})</span>
+      <span class="val">${fmtBRL(multaValor)}</span>
+    </div>
+    <div class="stat-line juros">
+      <span class="lbl">Juros — SELIC (${fmtPct(jurosPct)})</span>
+      <span class="val">${fmtBRL(jurosValor)}</span>
+    </div>
+    <div class="stat-line total">
+      <span class="lbl">Total a recolher</span>
+      <span class="val">${fmtBRL(total)}</span>
+    </div>
+
+    ${breakdownHTML}
+  `;
+
+  btn.disabled = false;
+  btn.textContent = 'Calcular multa e juros';
+}
+
+$('calcBtn').addEventListener('click', calcular);
+</script>
+</body>
+</html>
